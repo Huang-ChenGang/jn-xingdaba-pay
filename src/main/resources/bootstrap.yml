@@ -1,0 +1,17 @@
+server:
+  port: 9006
+spring:
+  application:
+    name: xingdaba-pay
+  cloud:
+    config:
+      discovery:
+        service-id: xingdaba-config
+        enabled: true
+eureka:
+  client:
+    service-url:
+      defaultZone: http://xingdaba-eureka:8761/eureka/
+#      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
