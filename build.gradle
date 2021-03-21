@@ -39,9 +39,10 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
-    implementation 'com.jn:jn-core-common:2021.3.1-SNAPSHOT'
+    implementation 'com.jn:jn-core-common:2021.3.2-SNAPSHOT'
 
     implementation 'mysql:mysql-connector-java:8.0.21'
+    implementation 'org.jdom:jdom:2.0.2'
 
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
