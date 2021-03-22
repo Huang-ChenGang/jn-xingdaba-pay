@@ -64,7 +64,7 @@ public class WechatAppletPayDomainServiceImpl implements WechatAppletPayDomainSe
         String jnOrderId = requestDto.getJnOrderId();
         String payBody = requestDto.getTradeDesc();
         String payAttach = payOrderId;
-        String jnPayNo = keyBuilder.getUniqueKey("JNWechatApplet");
+        String jnPayNo = keyBuilder.getUniqueKey("JXWP");
         BigDecimal orderAmount = requestDto.getTotalAmount();
         String payIp;
         try {
@@ -100,6 +100,7 @@ public class WechatAppletPayDomainServiceImpl implements WechatAppletPayDomainSe
         wechatAppletPay.setPayBody(payBody);
         wechatAppletPay.setPayAttach(payAttach);
         wechatAppletPay.setOrderAmount(orderAmount);
+        wechatAppletPay.setRealAmount(BigDecimal.ZERO);
         wechatAppletPay.setPayIp(payIp);
         wechatAppletPay.setNotifyUrl(notifyUrl);
         wechatAppletPay.setPayState("UNPAID");
