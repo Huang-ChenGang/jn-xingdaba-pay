@@ -55,6 +55,6 @@ public class WechatAppletPayServiceImpl implements WechatAppletPayService {
             log.error("format pay success message to json error.", e);
             throw new PayException(UNIFIED_ORDER_NOTIFY_ERROR);
         }
-        amqpTemplate.convertAndSend("paySuccess", "order", message);
+        amqpTemplate.convertAndSend("PaySuccess", "WechatApplet", message);
     }
 }
