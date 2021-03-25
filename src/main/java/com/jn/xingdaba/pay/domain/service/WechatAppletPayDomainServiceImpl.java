@@ -32,8 +32,7 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.jn.xingdaba.pay.infrastructure.exception.PaySystemError.GET_OPEN_ID_ERROR;
-import static com.jn.xingdaba.pay.infrastructure.exception.PaySystemError.PAY_FAILED;
+import static com.jn.xingdaba.pay.infrastructure.exception.PaySystemError.*;
 
 @Slf4j
 @Service
@@ -146,6 +145,39 @@ public class WechatAppletPayDomainServiceImpl implements WechatAppletPayDomainSe
         return responseDto;
     }
 
+    @Override
+    public WechatAppletPay unifiedOrderNotify(String notifyResult) {
+        Map<String, String> wechatNotifyResult = XmlAssembler.analysisXml(notifyResult);
+
+        if (wechatNotifyResult == null) {
+            throw new PayException(UNIFIED_ORDER_NOTIFY_ERROR);
+        }
+
+        if (!"SUCCESS".equals(wechatNotifyResult.get("result_code"))
+                || !"SUCCESS".equals(wechatNotifyResult.get("return_code"))) {
+            // TODO 支付失败逻辑处理
+            log.info("pay failed");
+            log.info("result_code = [" + wechatNotifyResult.get("result_code") + "]");
+            log.info("return_code = [" + wechatNotifyResult.get("return_code") + "]");
+            return null;
+        }
+
+        // 获取支付结果参数
+        String payOrderId = wechatNotifyResult.get("attach");
+        BigDecimal realAmount = fenToYuan(new BigDecimal(wechatNotifyResult.get("total_fee")));
+        String wechatPayNo = wechatNotifyResult.get("transaction_id");
+
+        // 更新支付订单信息
+        WechatAppletPay wechatAppletPay = new WechatAppletPay();
+        wechatAppletPay.setId(payOrderId);
+        wechatAppletPay.setRealAmount(realAmount);
+        wechatAppletPay.setWechatPayNo(wechatPayNo);
+        wechatAppletPay.setWechatResultMsg(notifyResult);
+        wechatAppletPay.setPayState("PAID");
+        wechatAppletPay.setPayTime(LocalDateTime.now());
+        return repository.save(wechatAppletPay);
+    }
+
     private String getOpenId(String customerId) {
         String getUrl = "http://XINGDABA-CUSTOMER/wechat/applet/customers/open-id/{customerId}";
         String resourceResponseJson = jnRestTemplate.getForObject(getUrl, String.class, customerId);
@@ -164,6 +196,15 @@ public class WechatAppletPayDomainServiceImpl implements WechatAppletPayDomainSe
 
     private BigDecimal yuanToFen(BigDecimal amount){
         return amount.multiply(new BigDecimal(100)).setScale(0, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal fenToYuan(BigDecimal amount) {
+        String amountStr = amount.toString();
+
+        if(!amountStr.matches("[1-9]\\d")) {
+            throw new PayException(UNIFIED_ORDER_NOTIFY_ERROR);
+        }
+        return amount.divide(new BigDecimal(100), RoundingMode.HALF_UP);
     }
 
     public static String getApiSign(SortedMap<String, String> paramList) {

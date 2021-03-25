@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 @Slf4j
@@ -30,7 +31,7 @@ public class WechatAppletPayController {
     }
 
     @PostMapping("/unified-order/notify")
-    public ServerResponse<Void> unifiedOrderNotify(@RequestBody String notifyResult) {
+    public ServerResponse<Void> unifiedOrderNotify(@RequestBody @NotBlank String notifyResult) {
         log.info("wechat applet unified order notify result: {}", notifyResult);
         return ServerResponse.success();
     }
