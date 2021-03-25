@@ -6,7 +6,12 @@ import com.jn.core.exception.JNException;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
+import static com.jn.xingdaba.pay.infrastructure.exception.PaySystemError.PAY_FAILED;
+
 public class PayException extends JNException {
+    public PayException() {
+        this(PAY_FAILED);
+    }
 
     public PayException(@NotNull JNError error) {
         super(error);

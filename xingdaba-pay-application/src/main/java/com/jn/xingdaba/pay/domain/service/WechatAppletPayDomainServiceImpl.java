@@ -164,12 +164,11 @@ public class WechatAppletPayDomainServiceImpl implements WechatAppletPayDomainSe
 
         // 获取支付结果参数
         String payOrderId = wechatNotifyResult.get("attach");
-        BigDecimal realAmount = fenToYuan(new BigDecimal(wechatNotifyResult.get("total_fee")));
+        BigDecimal realAmount = BigDecimal.valueOf(Integer.parseInt(wechatNotifyResult.get("total_fee")) / 100);
         String wechatPayNo = wechatNotifyResult.get("transaction_id");
 
         // 更新支付订单信息
-        WechatAppletPay wechatAppletPay = new WechatAppletPay();
-        wechatAppletPay.setId(payOrderId);
+        WechatAppletPay wechatAppletPay = repository.findById(payOrderId).orElseThrow(PayException::new);
         wechatAppletPay.setRealAmount(realAmount);
         wechatAppletPay.setWechatPayNo(wechatPayNo);
         wechatAppletPay.setWechatResultMsg(notifyResult);
@@ -196,15 +195,6 @@ public class WechatAppletPayDomainServiceImpl implements WechatAppletPayDomainSe
 
     private BigDecimal yuanToFen(BigDecimal amount){
         return amount.multiply(new BigDecimal(100)).setScale(0, RoundingMode.HALF_UP);
-    }
-
-    private BigDecimal fenToYuan(BigDecimal amount) {
-        String amountStr = amount.toString();
-
-        if(!amountStr.matches("[1-9]\\d")) {
-            throw new PayException(UNIFIED_ORDER_NOTIFY_ERROR);
-        }
-        return amount.divide(new BigDecimal(100), RoundingMode.HALF_UP);
     }
 
     public static String getApiSign(SortedMap<String, String> paramList) {
