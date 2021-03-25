@@ -31,9 +31,8 @@ public class WechatAppletPayController {
     }
 
     @PostMapping("/unified-order/notify")
-    public ServerResponse<Void> unifiedOrderNotify(@RequestBody @NotBlank String notifyResult) {
+    public ServerResponse<String> unifiedOrderNotify(@RequestBody @NotBlank String notifyResult) {
         log.info("wechat applet unified order notify result: {}", notifyResult);
-        service.unifiedOrderNotify(notifyResult);
-        return ServerResponse.success();
+        return ServerResponse.success(service.unifiedOrderNotify(notifyResult));
     }
 }

@@ -6,5 +6,5 @@ import com.jn.xingdaba.pay.api.WechatAppletUnifiedOrderResponseData;
 public interface WechatAppletPayService {
     WechatAppletUnifiedOrderResponseData unifiedOrder(WechatAppletUnifiedOrderRequestData requestData);
 
-    void unifiedOrderNotify(String notifyResult);
+    String unifiedOrderNotify(String notifyResult);
 }

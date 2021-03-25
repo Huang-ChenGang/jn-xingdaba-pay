@@ -10,6 +10,7 @@ import com.jn.xingdaba.pay.application.dto.WechatAppletUnifiedOrderRequestDto;
 import com.jn.xingdaba.pay.application.dto.WechatAppletUnifiedOrderResponseDto;
 import com.jn.xingdaba.pay.domain.model.WechatAppletPay;
 import com.jn.xingdaba.pay.domain.repository.WechatAppletPayRepository;
+import com.jn.xingdaba.pay.infrastructure.config.Md5Encoder;
 import com.jn.xingdaba.pay.infrastructure.config.XmlAssembler;
 import com.jn.xingdaba.pay.infrastructure.exception.PayException;
 import lombok.extern.slf4j.Slf4j;
@@ -24,15 +25,16 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import static com.jn.xingdaba.pay.infrastructure.exception.PaySystemError.*;
+import static com.jn.xingdaba.pay.infrastructure.exception.PaySystemError.GET_OPEN_ID_ERROR;
+import static com.jn.xingdaba.pay.infrastructure.exception.PaySystemError.UNIFIED_ORDER_NOTIFY_ERROR;
 
 @Slf4j
 @Service
@@ -155,16 +157,18 @@ public class WechatAppletPayDomainServiceImpl implements WechatAppletPayDomainSe
 
         if (!"SUCCESS".equals(wechatNotifyResult.get("result_code"))
                 || !"SUCCESS".equals(wechatNotifyResult.get("return_code"))) {
-            // TODO 支付失败逻辑处理
+            // TODO 支付失败逻辑处理 异常返回按照微信要求的格式
             log.info("pay failed");
             log.info("result_code = [" + wechatNotifyResult.get("result_code") + "]");
             log.info("return_code = [" + wechatNotifyResult.get("return_code") + "]");
             return null;
         }
 
+        // TODO 添加金额验证，异常返回按照微信要求的格式
+
         // 获取支付结果参数
         String payOrderId = wechatNotifyResult.get("attach");
-        BigDecimal realAmount = BigDecimal.valueOf(Integer.parseInt(wechatNotifyResult.get("total_fee")) / 100);
+        BigDecimal realAmount = BigDecimal.valueOf(Integer.parseInt(wechatNotifyResult.get("total_fee"))).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
         String wechatPayNo = wechatNotifyResult.get("transaction_id");
 
         // 更新支付订单信息
@@ -212,26 +216,7 @@ public class WechatAppletPayDomainServiceImpl implements WechatAppletPayDomainSe
         }
 
         toEncodeStr.append("key=" + WECHAT_API_SECRET_KEY);
-        return md5Encode(toEncodeStr.toString()).toUpperCase();
+        return Md5Encoder.md5Encode(toEncodeStr.toString()).toUpperCase();
     }
 
-    private static String md5Encode(String origin) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            return byteToHex(md.digest(origin.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException e) {
-            log.error("md5 encode error.", e);
-            throw new PayException(PAY_FAILED);
-        }
-    }
-
-    private static String byteToHex(final byte[] hash) {
-        Formatter formatter = new Formatter();
-        for (byte b : hash) {
-            formatter.format("%02x", b);
-        }
-        String result = formatter.toString();
-        formatter.close();
-        return result;
-    }
 }
