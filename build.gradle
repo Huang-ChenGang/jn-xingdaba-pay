@@ -1,60 +1,61 @@
 plugins {
-    id 'org.springframework.boot' version '2.3.7.RELEASE'
+    id 'org.springframework.boot' version '2.3.7.RELEASE' apply false
     id 'io.spring.dependency-management' version '1.0.10.RELEASE'
     id 'java'
 }
-
-group = 'com.jn'
-version = '2021.3.0-SNAPSHOT'
-sourceCompatibility = '11'
 
 ext {
     set('springCloudVersion', "Hoxton.SR9")
 }
 
-repositories {
-    mavenLocal()
-    maven {
-        url "http://118.25.184.76:8081/nexus/content/groups/oobusGroup/"
-        credentials {
-            username NexusUser
-            password NexusPwd
+allprojects {
+    group = 'com.jn'
+    version = '2021.3.0-SNAPSHOT'
+    sourceCompatibility = '11'
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'io.spring.dependency-management'
+
+    ext {
+        publishNexusReleases = "http://118.25.184.76:8081/nexus/content/repositories/oobusReleases/"
+        publishNexusSnapshots = "http://118.25.184.76:8081/nexus/content/repositories/oobusSnapshots/"
+        publishNexusUser = NexusUser
+        publishNexusPwd = NexusPwd
+    }
+
+    repositories {
+        mavenLocal()
+        maven {
+            url "http://118.25.184.76:8081/nexus/content/groups/oobusGroup/"
+            credentials {
+                username NexusUser
+                password NexusPwd
+            }
         }
     }
-}
 
-dependencyManagement {
-    imports {
-        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        }
+
+        dependencies {
+            dependency 'org.projectlombok:lombok:1.18.16'
+            dependency 'mysql:mysql-connector-java:8.0.21'
+            dependency 'org.jdom:jdom:2.0.2'
+
+            dependency 'com.jn:jn-core-common:2021.3.2-SNAPSHOT'
+        }
     }
-}
 
-dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-amqp'
-
-    implementation 'org.springframework.cloud:spring-cloud-starter-config'
-    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
-
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-
-    implementation 'com.jn:jn-core-common:2021.3.2-SNAPSHOT'
-
-    implementation 'mysql:mysql-connector-java:8.0.21'
-    implementation 'org.jdom:jdom:2.0.2'
-
-    testImplementation('org.springframework.boot:spring-boot-starter-test') {
-        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    configurations.all {
+        resolutionStrategy.cacheDynamicVersionsFor 10, 'minutes'
+        resolutionStrategy.cacheChangingModulesFor 10, 'minutes'
     }
-}
 
-configurations.all {
-    resolutionStrategy.cacheDynamicVersionsFor 10, 'minutes'
-    resolutionStrategy.cacheChangingModulesFor 10, 'minutes'
-}
-
-test {
-    useJUnitPlatform()
+    test {
+        useJUnitPlatform()
+    }
 }

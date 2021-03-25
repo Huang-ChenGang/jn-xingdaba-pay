@@ -2,7 +2,7 @@ FROM hub.c.163.com/cloudndp/library/openjdk:jdk-11
 
 MAINTAINER hcg hcggang@163.com
 
-ADD build/libs/*.jar app.jar
+ADD xingdaba-pay-application/build/libs/*.jar app.jar
 
 EXPOSE 8080
 
