@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jn.core.api.ServerResponse;
 import com.jn.core.builder.KeyBuilder;
 import com.jn.core.dto.KeyValueDto;
+import com.jn.xingdaba.order.api.UnsubscribeMessage;
 import com.jn.xingdaba.pay.application.dto.WechatAppletUnifiedOrderRequestDto;
 import com.jn.xingdaba.pay.application.dto.WechatAppletUnifiedOrderResponseDto;
 import com.jn.xingdaba.pay.domain.model.WechatAppletPay;
@@ -13,6 +14,7 @@ import com.jn.xingdaba.pay.domain.repository.WechatAppletPayRepository;
 import com.jn.xingdaba.pay.infrastructure.config.Md5Encoder;
 import com.jn.xingdaba.pay.infrastructure.config.XmlAssembler;
 import com.jn.xingdaba.pay.infrastructure.exception.PayException;
+import com.jn.xingdaba.pay.infrastructure.exception.RefundException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -27,10 +29,7 @@ import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.jn.xingdaba.pay.infrastructure.exception.PaySystemError.GET_OPEN_ID_ERROR;
@@ -44,17 +43,20 @@ public class WechatAppletPayDomainServiceImpl implements WechatAppletPayDomainSe
     private final KeyBuilder keyBuilder;
     private final WechatAppletPayRepository repository;
     private final RestTemplate restTemplate;
+    private final RestTemplate wechatRestTemplate;
 
     public WechatAppletPayDomainServiceImpl(@Qualifier("jnRestTemplate") RestTemplate jnRestTemplate,
                                             ObjectMapper objectMapper,
                                             KeyBuilder keyBuilder,
                                             WechatAppletPayRepository repository,
-                                            RestTemplateBuilder restTemplateBuilder) {
+                                            RestTemplateBuilder restTemplateBuilder,
+                                            RestTemplate wechatRestTemplate) {
         this.jnRestTemplate = jnRestTemplate;
         this.objectMapper = objectMapper;
         this.keyBuilder = keyBuilder;
         this.repository = repository;
         this.restTemplate = restTemplateBuilder.build();
+        this.wechatRestTemplate = wechatRestTemplate;
     }
 
     @Override
@@ -179,6 +181,53 @@ public class WechatAppletPayDomainServiceImpl implements WechatAppletPayDomainSe
         wechatAppletPay.setPayState("PAID");
         wechatAppletPay.setPayTime(LocalDateTime.now());
         return repository.save(wechatAppletPay);
+    }
+
+    @Override
+    public void refund(UnsubscribeMessage unsubscribeMessage) {
+        log.info("refund for unsubscribe message: {}", unsubscribeMessage);
+        WechatAppletPay wechatAppletPay = repository.findByJnOrderId(unsubscribeMessage.getJnOrderId()).orElseThrow(RefundException::new);
+
+        // TODO 订单金额小于退款金额验证
+
+        // 拼接下单参数
+        SortedMap<String, String> paramMap = new TreeMap();
+        paramMap.put("appid", WECHAT_APPLET_ID);
+        paramMap.put("mch_id", MERCHANT_NO);
+        paramMap.put("nonce_str", keyBuilder.getUniqueKey());
+        paramMap.put("transaction_id", wechatAppletPay.getWechatPayNo());
+        paramMap.put("out_refund_no", keyBuilder.getUniqueKey());
+        paramMap.put("total_fee", yuanToFen(wechatAppletPay.getRealAmount()).toString());
+        paramMap.put("refund_fee", yuanToFen(unsubscribeMessage.getRefundAmount()).toString());
+        paramMap.put("notify_url", WECHAT_APPLET_REFUND_NOTIFY_URL);
+
+        // 获取签名
+        String sign = getApiSign(paramMap);
+
+        // 组装Xml字符串
+        List<KeyValueDto> paramList = new ArrayList<>();
+        for (Map.Entry<String, String> param : paramMap.entrySet()) {
+            paramList.add(new KeyValueDto(param.getKey(), param.getValue()));
+        }
+        paramList.add(new KeyValueDto("sign", sign));
+        String xmlParam = XmlAssembler.assembleXml(paramList);
+
+        HttpEntity<String> requestEntity = new HttpEntity<>(xmlParam);
+        String wechatRefundResponseJson = restTemplate.postForObject(WECHAT_APPLET_UNIFIED_ORDER_URL, requestEntity, String.class);
+        log.info("wechat refund response json: {}", wechatRefundResponseJson);
+
+        // 解析Xml
+        Map<String, String> wechatRefundResponse = XmlAssembler.analysisXml(wechatRefundResponseJson);
+        if (wechatRefundResponse == null) {
+            throw new RefundException();
+        }
+
+        // 退款成功
+        if ("SUCCESS".equals(wechatRefundResponse.get("return_code")) && "SUCCESS".equals(wechatRefundResponse.get("result_code"))) {
+
+        } else {
+            // TODO 退款失败逻辑
+        }
     }
 
     private String getOpenId(String customerId) {

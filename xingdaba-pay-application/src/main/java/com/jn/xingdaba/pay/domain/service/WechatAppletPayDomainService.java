@@ -1,5 +1,6 @@
 package com.jn.xingdaba.pay.domain.service;
 
+import com.jn.xingdaba.order.api.UnsubscribeMessage;
 import com.jn.xingdaba.pay.application.dto.WechatAppletUnifiedOrderRequestDto;
 import com.jn.xingdaba.pay.application.dto.WechatAppletUnifiedOrderResponseDto;
 import com.jn.xingdaba.pay.domain.model.WechatAppletPay;
@@ -11,8 +12,11 @@ public interface WechatAppletPayDomainService {
     String MERCHANT_NO = "1602924891";
     String WECHAT_API_SECRET_KEY = "shJN20191226HjLcZyGcY7UjM6YhN5Tg";
     String WECHAT_APPLET_UNIFIED_ORDER_URL = "https://api.mch.weixin.qq.com/pay/unifiedorder";
+    String WECHAT_APPLET_REFUND_NOTIFY_URL = "https://api.xingdaba.com/api/pay/wechat-applet/refund/notify";
 
     WechatAppletUnifiedOrderResponseDto unifiedOrder(WechatAppletUnifiedOrderRequestDto requestDto);
 
     WechatAppletPay unifiedOrderNotify(String notifyResult);
+
+    void refund(UnsubscribeMessage unsubscribeMessage);
 }

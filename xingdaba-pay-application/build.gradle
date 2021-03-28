@@ -13,6 +13,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
 
     implementation 'com.jn:jn-core-common'
+    implementation 'com.jn:xingdaba-order-api'
 
     implementation 'mysql:mysql-connector-java'
     implementation 'org.jdom:jdom'
