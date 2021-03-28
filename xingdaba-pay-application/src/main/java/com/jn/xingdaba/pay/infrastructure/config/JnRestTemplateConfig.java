@@ -15,8 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import javax.net.ssl.SSLContext;
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 
@@ -36,8 +35,8 @@ public class JnRestTemplateConfig {
 
         try {
             KeyStore keyStore = KeyStore.getInstance("PKCS12");
-            FileInputStream inputStream = new FileInputStream(new File("/cert/apiclient_cert.p12"));
-            keyStore.load(inputStream, "1602924891".toCharArray());
+            InputStream stream = getClass().getClassLoader().getResourceAsStream("cert/apiclient_cert.p12");
+            keyStore.load(stream, "1602924891".toCharArray());
 
             // Trust own CA and all self-signed certs
             SSLContext sslcontext = SSLContextBuilder.create()
@@ -50,7 +49,7 @@ public class JnRestTemplateConfig {
             HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient);
             restTemplate = new RestTemplate(factory);
 
-            //将转换器的编码换成utf-8
+            // 将转换器的编码换成utf-8
             restTemplate.getMessageConverters().set(1, new StringHttpMessageConverter(StandardCharsets.UTF_8));
         } catch (Exception e) {
             log.error("load wechatRestTemplate error.", e);
