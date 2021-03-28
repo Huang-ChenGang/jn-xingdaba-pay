@@ -190,7 +190,7 @@ public class WechatAppletPayDomainServiceImpl implements WechatAppletPayDomainSe
 
         // TODO 订单金额小于退款金额验证
 
-        // 拼接下单参数
+        // 拼接退款参数
         SortedMap<String, String> paramMap = new TreeMap();
         paramMap.put("appid", WECHAT_APPLET_ID);
         paramMap.put("mch_id", MERCHANT_NO);
@@ -213,7 +213,7 @@ public class WechatAppletPayDomainServiceImpl implements WechatAppletPayDomainSe
         String xmlParam = XmlAssembler.assembleXml(paramList);
 
         HttpEntity<String> requestEntity = new HttpEntity<>(xmlParam);
-        String wechatRefundResponseJson = restTemplate.postForObject(WECHAT_APPLET_UNIFIED_ORDER_URL, requestEntity, String.class);
+        String wechatRefundResponseJson = wechatRestTemplate.postForObject(WECHAT_APPLET_REFUND_URL, requestEntity, String.class);
         log.info("wechat refund response json: {}", wechatRefundResponseJson);
 
         // 解析Xml
@@ -224,7 +224,8 @@ public class WechatAppletPayDomainServiceImpl implements WechatAppletPayDomainSe
 
         // 退款成功
         if ("SUCCESS".equals(wechatRefundResponse.get("return_code")) && "SUCCESS".equals(wechatRefundResponse.get("result_code"))) {
-
+            wechatAppletPay.setPayState("REFUND");
+            repository.save(wechatAppletPay);
         } else {
             // TODO 退款失败逻辑
         }

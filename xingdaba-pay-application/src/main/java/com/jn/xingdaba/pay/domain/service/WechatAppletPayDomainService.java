@@ -13,6 +13,7 @@ public interface WechatAppletPayDomainService {
     String WECHAT_API_SECRET_KEY = "shJN20191226HjLcZyGcY7UjM6YhN5Tg";
     String WECHAT_APPLET_UNIFIED_ORDER_URL = "https://api.mch.weixin.qq.com/pay/unifiedorder";
     String WECHAT_APPLET_REFUND_NOTIFY_URL = "https://api.xingdaba.com/api/pay/wechat-applet/refund/notify";
+    String WECHAT_APPLET_REFUND_URL = "https://api.mch.weixin.qq.com/secapi/pay/refund";
 
     WechatAppletUnifiedOrderResponseDto unifiedOrder(WechatAppletUnifiedOrderRequestDto requestDto);
 
