@@ -10,7 +10,7 @@ ext {
 
 allprojects {
     group = 'com.jn'
-    version = '2021.3.0-SNAPSHOT'
+    version = '2021.4.0-SNAPSHOT'
     sourceCompatibility = '11'
 }
 
@@ -19,8 +19,8 @@ subprojects {
     apply plugin: 'io.spring.dependency-management'
 
     ext {
-        publishNexusReleases = "http://118.25.184.76:8081/nexus/content/repositories/oobusReleases/"
-        publishNexusSnapshots = "http://118.25.184.76:8081/nexus/content/repositories/oobusSnapshots/"
+        publishNexusReleases = "http://81.68.181.53:8081/repository/jn-releases/"
+        publishNexusSnapshots = "http://81.68.181.53:8081/repository/jn-snapshots/"
         publishNexusUser = NexusUser
         publishNexusPwd = NexusPwd
     }
@@ -28,7 +28,7 @@ subprojects {
     repositories {
         mavenLocal()
         maven {
-            url "http://118.25.184.76:8081/nexus/content/groups/oobusGroup/"
+            url "http://81.68.181.53:8081/repository/jn-group/"
             credentials {
                 username NexusUser
                 password NexusPwd
@@ -46,8 +46,8 @@ subprojects {
             dependency 'mysql:mysql-connector-java:8.0.21'
             dependency 'org.jdom:jdom:2.0.2'
 
-            dependency 'com.jn:jn-core-common:2021.3.2-SNAPSHOT'
-            dependency 'com.jn:xingdaba-order-api:2021.2.0-SNAPSHOT'
+            dependency 'com.jn:jn-core-common:2021.4.0-SNAPSHOT'
+            dependency 'com.jn:xingdaba-order-api:2021.4.0-SNAPSHOT'
         }
     }
 
