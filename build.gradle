@@ -47,7 +47,7 @@ subprojects {
             dependency 'org.jdom:jdom:2.0.2'
 
             dependency 'com.jn:jn-core-common:2021.4.0-SNAPSHOT'
-            dependency 'com.jn:xingdaba-order-api:2021.4.0-SNAPSHOT'
+            dependency 'com.jn:xingdaba-order-api:2021.5.0-SNAPSHOT'
         }
     }
 

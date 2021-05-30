@@ -7,6 +7,7 @@ import com.jn.core.api.ServerResponse;
 import com.jn.core.builder.KeyBuilder;
 import com.jn.core.dto.KeyValueDto;
 import com.jn.xingdaba.order.api.UnsubscribeMessage;
+import com.jn.xingdaba.order.api.UserOrderMessage;
 import com.jn.xingdaba.pay.application.dto.WechatAppletUnifiedOrderRequestDto;
 import com.jn.xingdaba.pay.application.dto.WechatAppletUnifiedOrderResponseDto;
 import com.jn.xingdaba.pay.domain.model.WechatAppletPay;
@@ -17,6 +18,7 @@ import com.jn.xingdaba.pay.infrastructure.exception.PayException;
 import com.jn.xingdaba.pay.infrastructure.exception.RefundException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
+import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
@@ -32,8 +34,7 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.jn.xingdaba.pay.infrastructure.exception.PaySystemError.GET_OPEN_ID_ERROR;
-import static com.jn.xingdaba.pay.infrastructure.exception.PaySystemError.UNIFIED_ORDER_NOTIFY_ERROR;
+import static com.jn.xingdaba.pay.infrastructure.exception.PaySystemError.*;
 
 @Slf4j
 @Service
@@ -44,19 +45,22 @@ public class WechatAppletPayDomainServiceImpl implements WechatAppletPayDomainSe
     private final WechatAppletPayRepository repository;
     private final RestTemplate restTemplate;
     private final RestTemplate wechatRestTemplate;
+    private final AmqpTemplate amqpTemplate;
 
     public WechatAppletPayDomainServiceImpl(@Qualifier("jnRestTemplate") RestTemplate jnRestTemplate,
                                             ObjectMapper objectMapper,
                                             KeyBuilder keyBuilder,
                                             WechatAppletPayRepository repository,
                                             RestTemplateBuilder restTemplateBuilder,
-                                            RestTemplate wechatRestTemplate) {
+                                            RestTemplate wechatRestTemplate,
+                                            AmqpTemplate amqpTemplate) {
         this.jnRestTemplate = jnRestTemplate;
         this.objectMapper = objectMapper;
         this.keyBuilder = keyBuilder;
         this.repository = repository;
         this.restTemplate = restTemplateBuilder.build();
         this.wechatRestTemplate = wechatRestTemplate;
+        this.amqpTemplate = amqpTemplate;
     }
 
     @Override
@@ -226,9 +230,35 @@ public class WechatAppletPayDomainServiceImpl implements WechatAppletPayDomainSe
         if ("SUCCESS".equals(wechatRefundResponse.get("return_code")) && "SUCCESS".equals(wechatRefundResponse.get("result_code"))) {
             wechatAppletPay.setPayState("REFUND");
             repository.save(wechatAppletPay);
+
+            UserOrderMessage orderMessage = getUserOrderMessage(unsubscribeMessage.getJnOrderId());
+            String message;
+            try {
+                message = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(orderMessage);
+            } catch (JsonProcessingException e) {
+                log.error("order message to json error.", e);
+                throw new PayException(UNIFIED_ORDER_NOTIFY_ERROR);
+            }
+            amqpTemplate.convertAndSend("RefundSuccess", "WechatApplet", message);
         } else {
             // TODO 退款失败逻辑
         }
+    }
+
+    private UserOrderMessage getUserOrderMessage(String orderId) {
+        String getUrl = "http://XINGDABA-ORDER/orders/order-message/{orderId}";
+        String resourceResponseJson = jnRestTemplate.getForObject(getUrl, String.class, orderId);
+        ServerResponse<UserOrderMessage> resourceResponse;
+        try {
+            resourceResponse = objectMapper.readValue(resourceResponseJson, new TypeReference<ServerResponse<UserOrderMessage>>(){});
+        } catch (JsonProcessingException e) {
+            log.error("get order message from order server error.", e);
+            throw new PayException(GET_ORDER_MESSAGE_ERROR, e.getMessage());
+        }
+        if (!"0".equals(resourceResponse.getCode())) {
+            throw new PayException(GET_ORDER_MESSAGE_ERROR, resourceResponse.getMessage());
+        }
+        return resourceResponse.getData();
     }
 
     private String getOpenId(String customerId) {

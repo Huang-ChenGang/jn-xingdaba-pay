@@ -34,7 +34,8 @@ public class WechatAppletPayServiceImpl implements WechatAppletPayService {
 
     public WechatAppletPayServiceImpl(WechatAppletPayDomainService domainService,
                                       AmqpTemplate amqpTemplate,
-                                      ObjectMapper objectMapper, StringRedisTemplate stringRedisTemplate) {
+                                      ObjectMapper objectMapper,
+                                      StringRedisTemplate stringRedisTemplate) {
         this.domainService = domainService;
         this.amqpTemplate = amqpTemplate;
         this.objectMapper = objectMapper;
